@@ -1,58 +1,173 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Courier Master API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+REST API for courier master data, built with Laravel. Backend only: no authentication, no authorization, no frontend. Every endpoint returns JSON.
 
-## About Laravel
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Requirements
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- PHP 8.3 or newer (`composer.json` requires `^8.3`)
+- Composer
+- MySQL or PostgreSQL
+- `pdo_sqlite` + `sqlite3` PHP extensions, for running the test suite in memory
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Setup
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+cp .env.example .env
+php artisan key:generate
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Set the database connection in `.env`, then:
 
-## Contributing
+```bash
+php artisan migrate
+php artisan db:seed --class=CourierSeeder   # optional, 50 dummy couriers
+php artisan serve
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+The API is then available at `http://localhost:8000/api/couriers`.
 
-## Code of Conduct
+## Database
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Table `m_courier`, primary key `courier_id`.
 
-## Security Vulnerabilities
+| Column | Type | Nullable | Notes |
+|--------|------|----------|-------|
+| courier_id | BIGINT | No | Primary key |
+| courier_code | VARCHAR(20) | No | Unique |
+| courier_name | VARCHAR(150) | No | Indexed |
+| courier_phone | VARCHAR(30) | Yes | |
+| courier_email | VARCHAR(100) | Yes | |
+| courier_level | TINYINT | No | 1 to 5, indexed |
+| courier_address | TEXT | Yes | |
+| is_active | BOOLEAN | No | Defaults to true |
+| created_at | TIMESTAMP | No | |
+| updated_at | TIMESTAMP | No | |
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Naming follows the convention in the PRD: `m_` prefix for master tables, `<entity>_id` for primary keys.
 
-## License
+## Endpoints
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/couriers` | List couriers |
+| GET | `/api/couriers/{courier_id}` | Courier detail |
+| POST | `/api/couriers` | Create courier |
+| PUT | `/api/couriers/{courier_id}` | Update courier |
+| DELETE | `/api/couriers/{courier_id}` | Delete courier |
+
+### List query parameters
+
+| Parameter | Example | Behaviour |
+|-----------|---------|-----------|
+| `page` | `?page=2` | Laravel pagination |
+| `per_page` | `?per_page=25` | 1 to 100, defaults to 15 |
+| `search` | `?search=budi agung` | Each keyword matched against `courier_name` with `AND` |
+| `level` | `?level=2,3` | `WHERE courier_level IN (2,3)`, values 1 to 5 |
+| `sort` | `?sort=-created_at` | Prefix `-` means DESC, defaults to `courier_name` ASC |
+
+Search is tokenized, so `search=budi agung` matches `Budiono Hadi Agung`:
+
+```sql
+WHERE courier_name LIKE '%budi%' AND courier_name LIKE '%agung%'
+```
+
+Sortable columns: `courier_id`, `courier_code`, `courier_name`, `courier_level`, `created_at`, `updated_at`. Anything else falls back to the default sort.
+
+## Validation
+
+| Field | Rule |
+|-------|------|
+| courier_code | required, string, max 20, unique (ignores itself on update) |
+| courier_name | required, string, min 3, max 150 |
+| courier_phone | nullable, string, max 30 |
+| courier_email | nullable, email, max 100 |
+| courier_level | required, integer, between 1 and 5 |
+| courier_address | nullable, string |
+| is_active | boolean |
+
+Query parameters on the list endpoint are validated too, and return the same error envelope.
+
+## Response format
+
+Success:
+
+```json
+{
+  "success": true,
+  "message": "Courier created successfully.",
+  "data": {}
+}
+```
+
+Validation error, HTTP 422:
+
+```json
+{
+  "success": false,
+  "message": "Validation failed.",
+  "errors": {}
+}
+```
+
+Not found, HTTP 404:
+
+```json
+{
+  "success": false,
+  "message": "Courier not found."
+}
+```
+
+On the list endpoint, `data` holds the Laravel paginator payload, so the records sit in `data.data` alongside `data.current_page`, `data.per_page`, and `data.total`.
+
+## Project structure
+
+```
+app/
+├── Http/
+│   ├── Controllers/
+│   │      CourierController.php
+│   ├── Requests/
+│   │      ApiFormRequest.php          # shared authorize + 422 envelope
+│   │      IndexCourierRequest.php     # query parameter validation
+│   │      StoreCourierRequest.php
+│   │      UpdateCourierRequest.php
+│   └── Resources/
+│          CourierResource.php         # response field shape
+└── Models/
+       Courier.php                     # custom primary key, search + level scopes
+
+database/
+├── factories/CourierFactory.php
+├── migrations/
+└── seeders/CourierSeeder.php
+
+documentation-api/                     # Bruno API collection
+tests/Feature/CourierApiTest.php
+```
+
+## Tests
+
+```bash
+php artisan test
+```
+
+The suite runs against an in-memory SQLite database, configured in `phpunit.xml`.
+
+## API collection
+
+`documentation-api/` is a [Bruno](https://usebruno.com) collection in the OpenCollection YAML format. Open the folder in Bruno, or run it from the CLI:
+
+```bash
+cd documentation-api
+npx @usebruno/cli run Courier --env Local
+```
+
+Requests are sequenced so the folder runs end to end: the create request stores `courierId` as a runtime variable, later requests reuse it, and the delete requests clean up afterwards. `environments/Local.yml` points at `http://localhost:8000`; fill in `environments/Production.yml` before using it.
+
+## Notes
+
+- Frontend scaffolding (`resources/`, Vite, `package.json`) was removed, since the project is API only. `routes/web.php` holds no routes; the health check at `/up` still works.
+- `documentation-api/ai-instructions.md` documents the Bruno YAML format used by the collection.
