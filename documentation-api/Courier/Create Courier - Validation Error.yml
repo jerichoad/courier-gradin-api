@@ -1,0 +1,41 @@
+info:
+  name: Create Courier - Validation Error
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/couriers"
+  headers:
+    - name: accept
+      value: application/json
+    - name: content-type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "courier_code": "",
+        "courier_name": "ab",
+        "courier_email": "not-an-email",
+        "courier_level": 9
+      }
+  auth:
+    type: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("returns 422 with validation errors", function() {
+          expect(res.status).to.equal(422);
+          expect(res.body).to.have.property("success", false);
+          expect(res.body.message).to.equal("Validation failed.");
+          expect(res.body.errors).to.have.property("courier_code");
+          expect(res.body.errors).to.have.property("courier_name");
+          expect(res.body.errors).to.have.property("courier_email");
+          expect(res.body.errors).to.have.property("courier_level");
+        });
+
+settings:
+  encodeUrl: true

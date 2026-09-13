@@ -1,0 +1,30 @@
+info:
+  name: Delete Courier - Not Found
+  type: http
+  seq: 14
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/api/couriers/{{courierId}}"
+  headers:
+    - name: accept
+      value: application/json
+  body:
+    type: none
+  auth:
+    type: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("returns 404 once the courier is already deleted", function() {
+          expect(res.status).to.equal(404);
+          expect(res.body).to.deep.equal({
+            success: false,
+            message: "Courier not found."
+          });
+        });
+
+settings:
+  encodeUrl: true

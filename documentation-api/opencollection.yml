@@ -1,0 +1,76 @@
+opencollection: 1.0.0
+
+info:
+  name: Courier Master API
+
+request:
+  variables:
+    - name: courierId
+      value: "1"
+  scripts:
+    - type: before-request
+      code: |-
+        if (!bru.getEnvVar("baseUrl")) {
+          throw new Error("baseUrl is required. Select an environment before running this collection.");
+        }
+
+docs:
+  type: text/markdown
+  content: |-
+    ### Courier Master API
+
+    REST API for courier master data (`m_courier`). No authentication.
+
+    #### Base path
+
+    ```
+    {{baseUrl}}/api/couriers
+    ```
+
+    #### Endpoints
+
+    | Method | Path | Description |
+    |--------|------|-------------|
+    | GET | /api/couriers | List couriers (pagination, search, filter, sort) |
+    | GET | /api/couriers/{courier_id} | Courier detail |
+    | POST | /api/couriers | Create courier |
+    | PUT | /api/couriers/{courier_id} | Update courier |
+    | DELETE | /api/couriers/{courier_id} | Delete courier |
+
+    #### Query parameters on list
+
+    | Param | Example | Behaviour |
+    |-------|---------|-----------|
+    | page | `?page=2` | Laravel pagination |
+    | per_page | `?per_page=25` | Items per page, 1 to 100, defaults to 15 |
+    | search | `?search=budi agung` | Each keyword matched against `courier_name` with AND |
+    | level | `?level=2,3` | `WHERE courier_level IN (2,3)`, only levels 1 to 5 |
+    | sort | `?sort=created_at` or `?sort=-created_at` | Prefix `-` means DESC, default is `courier_name` ASC |
+
+    Invalid query parameters return the same 422 envelope as body validation.
+
+    #### Response envelope
+
+    Success:
+
+    ```json
+    { "success": true, "message": "Courier created successfully.", "data": {} }
+    ```
+
+    Validation error (422):
+
+    ```json
+    { "success": false, "message": "Validation failed.", "errors": {} }
+    ```
+
+    Not found (404):
+
+    ```json
+    { "success": false, "message": "Courier not found." }
+    ```
+
+    #### Run order
+
+    The requests are sequenced so the folder can be run end to end: create stores
+    `courierId` as a runtime variable, and every later request reuses it. The delete
+    request runs last and leaves no data behind.

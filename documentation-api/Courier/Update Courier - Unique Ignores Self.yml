@@ -1,0 +1,35 @@
+info:
+  name: Update Courier - Unique Ignores Self
+  type: http
+  seq: 12
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/api/couriers/{{courierId}}"
+  headers:
+    - name: accept
+      value: application/json
+    - name: content-type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "courier_code": "{{courierCode}}",
+        "courier_name": "Sinta Dewi",
+        "courier_level": 4
+      }
+  auth:
+    type: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("keeping its own courier_code passes unique validation", function() {
+          expect(res.status).to.equal(200);
+          expect(res.body.success).to.equal(true);
+        });
+
+settings:
+  encodeUrl: true

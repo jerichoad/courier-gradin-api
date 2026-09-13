@@ -1,0 +1,31 @@
+info:
+  name: List Couriers - Search
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/couriers?search=budi agung"
+  headers:
+    - name: accept
+      value: application/json
+  body:
+    type: none
+  auth:
+    type: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("finds courier_name matching every keyword", function() {
+          expect(res.status).to.equal(200);
+          const names = res.body.data.data.map(c => c.courier_name);
+          const matchesEveryKeyword = names.every(name =>
+            /budi/i.test(name) && /agung/i.test(name)
+          );
+          expect(matchesEveryKeyword).to.equal(true);
+        });
+
+settings:
+  encodeUrl: true

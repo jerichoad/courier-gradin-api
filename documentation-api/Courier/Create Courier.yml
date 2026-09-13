@@ -1,0 +1,51 @@
+info:
+  name: Create Courier
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/couriers"
+  headers:
+    - name: accept
+      value: application/json
+    - name: content-type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "courier_code": "CR{{$randomInt}}",
+        "courier_name": "Budiono Hadi Agung",
+        "courier_phone": "081234567890",
+        "courier_email": "{{$randomEmail}}",
+        "courier_level": 2,
+        "courier_address": "Jl. Merdeka 10",
+        "is_active": true
+      }
+  auth:
+    type: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 201) {
+          bru.setVar("courierId", res.body.data.courier_id);
+          bru.setVar("courierCode", res.body.data.courier_code);
+        }
+    - type: tests
+      code: |-
+        test("returns 201 with success envelope", function() {
+          expect(res.status).to.equal(201);
+          expect(res.body).to.have.property("success", true);
+          expect(res.body).to.have.property("data");
+        });
+
+        test("courier has expected fields", function() {
+          expect(res.body.data).to.have.property("courier_id");
+          expect(res.body.data.courier_level).to.equal(2);
+        });
+
+settings:
+  encodeUrl: true

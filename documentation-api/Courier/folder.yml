@@ -1,0 +1,10 @@
+info:
+  name: Courier
+  type: folder
+  seq: 1
+
+docs:
+  content: |-
+    Requests for `/api/couriers`. Run top to bottom: create seeds
+    `courierId`, later requests reuse it, delete cleans it up.
+  type: text/markdown

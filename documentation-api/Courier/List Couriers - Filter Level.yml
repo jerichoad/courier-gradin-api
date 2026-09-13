@@ -1,0 +1,29 @@
+info:
+  name: List Couriers - Filter Level
+  type: http
+  seq: 6
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/couriers?level=2,3"
+  headers:
+    - name: accept
+      value: application/json
+  body:
+    type: none
+  auth:
+    type: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("only returns courier_level 2 or 3", function() {
+          expect(res.status).to.equal(200);
+          const levels = res.body.data.data.map(c => c.courier_level);
+          const onlyAllowedLevels = levels.every(level => [2, 3].includes(level));
+          expect(onlyAllowedLevels).to.equal(true);
+        });
+
+settings:
+  encodeUrl: true

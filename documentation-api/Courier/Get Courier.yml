@@ -1,0 +1,28 @@
+info:
+  name: Get Courier
+  type: http
+  seq: 8
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/couriers/{{courierId}}"
+  headers:
+    - name: accept
+      value: application/json
+  body:
+    type: none
+  auth:
+    type: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("returns the courier created earlier", function() {
+          expect(res.status).to.equal(200);
+          expect(res.body.success).to.equal(true);
+          expect(String(res.body.data.courier_id)).to.equal(String(bru.getVar("courierId")));
+        });
+
+settings:
+  encodeUrl: true

@@ -1,0 +1,30 @@
+info:
+  name: Get Courier - Not Found
+  type: http
+  seq: 9
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/couriers/999999999"
+  headers:
+    - name: accept
+      value: application/json
+  body:
+    type: none
+  auth:
+    type: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("returns 404 not found envelope", function() {
+          expect(res.status).to.equal(404);
+          expect(res.body).to.deep.equal({
+            success: false,
+            message: "Courier not found."
+          });
+        });
+
+settings:
+  encodeUrl: true
