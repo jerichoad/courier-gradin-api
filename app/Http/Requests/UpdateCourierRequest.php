@@ -2,12 +2,19 @@
 
 namespace App\Http\Requests;
 
-class StoreCourierRequest extends ApiFormRequest
+use Illuminate\Validation\Rule;
+
+class UpdateCourierRequest extends ApiFormRequest
 {
     public function rules(): array
     {
+        $courierId = $this->route('courier');
+
         return [
-            'courier_code' => ['required', 'string', 'max:20', 'unique:m_courier,courier_code'],
+            'courier_code' => [
+                'required', 'string', 'max:20',
+                Rule::unique('m_courier', 'courier_code')->ignore($courierId, 'courier_id'),
+            ],
             'courier_name' => ['required', 'string', 'min:3', 'max:150'],
             'courier_phone' => ['nullable', 'string', 'max:30'],
             'courier_email' => ['nullable', 'email', 'max:100'],
